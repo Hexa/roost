@@ -1,0 +1,13 @@
+name: roost
+version: 0.1.0
+
+authors:
+  - Hexa <hexa.diary@gmail.com>
+
+targets:
+  roost:
+    main: src/roost.cr
+
+crystal: 0.22.0
+
+license: MIT
