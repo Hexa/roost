@@ -23,7 +23,7 @@ module Roost
   end
 end
 
-address = "0.0.0.0"
+address = "::"
 port = 8000
 dir = "."
 certificates = ""
