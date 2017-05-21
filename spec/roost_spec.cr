@@ -1,9 +1,20 @@
 require "./spec_helper"
+require "http/client"
 
 describe Roost do
-  # TODO: Write tests
+  it "" do
+    address = "::"
+    port = 8000
 
-  it "works" do
-    false.should eq(true)
+    spawn do
+      Roost::Server.run(address, port)
+    end
+
+    sleep 1
+
+    client = HTTP::Client.new("::1", port)
+    client.get("/") do |response|
+      response.status_code.should eq(200)
+    end
   end
 end
