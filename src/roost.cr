@@ -6,6 +6,7 @@ port = 8000
 dir = "."
 certificates = ""
 private_key = ""
+verbose = false
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: roost [arguments]"
@@ -14,6 +15,7 @@ OptionParser.parse! do |parser|
   parser.on("-d DIR", "root directory") { |name| dir = name }
   parser.on("-c FILE", "certificates") { |name| certificates = name }
   parser.on("-k KEY", "private key") { |name| private_key = name }
+  parser.on("-v", "verbose") { verbose = true }
   parser.on("-h", "Show this help") do
     puts parser
     exit 1
@@ -22,4 +24,4 @@ OptionParser.parse! do |parser|
   parser.invalid_option { exit 255 }
 end
 
-Roost::Server.run(address, port, dir, certificates, private_key)
+Roost::Server.run(address, port, dir, certificates, private_key, verbose)
