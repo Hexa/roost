@@ -7,6 +7,10 @@ dir = "."
 certificates = ""
 private_key = ""
 verbose = false
+websocket = false
+websocket_host = "::1"
+websocket_port = 18000
+websocket_path = ""
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: roost [arguments]"
@@ -16,6 +20,9 @@ OptionParser.parse! do |parser|
   parser.on("-c FILE", "certificates") { |name| certificates = name }
   parser.on("-k KEY", "private key") { |name| private_key = name }
   parser.on("-v", "verbose") { verbose = true }
+  parser.on("-f HOST", "websocket host") { |name| websocket_host = name }
+  parser.on("-q PORT", "websocket port") { |name| websocket_port = name.to_i }
+  parser.on("-w PATH", "websocket path") { |name| websocket_path = name; websocket = true }
   parser.on("-h", "Show this help") do
     puts parser
     exit 1
@@ -24,4 +31,4 @@ OptionParser.parse! do |parser|
   parser.invalid_option { exit 255 }
 end
 
-Roost::Server.run(address, port, dir, certificates, private_key, verbose)
+Roost::Server.run(address, port, dir, certificates, private_key, verbose, websocket, websocket_host, websocket_port, websocket_path)
