@@ -3,45 +3,12 @@ require "openssl"
 
 module Roost
   class Server
-    def self.run(ip_address : String, port : Int, dir = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, websocket : Bool = false, websocket_host : String = "::1", websocket_port : Int = 18000, websocket_path : String = "/")
-
-      if websocket
-        websocket_handler = HTTP::WebSocketHandler.new do |context|
-          websocket_client = HTTP::WebSocket.new(websocket_host, websocket_path, websocket_port)
-          websocket_client.on_message do |client_message|
-            context.send(client_message)
-          end
-
-          websocket_client.on_close do |client_message|
-            context.close(client_message)
-          end
-
-          context.on_message do |message|
-            websocket_client.send(message)
-          end
-
-          context.on_close do |message|
-            websocket_client.close(message)
-          end
-
-          spawn do
-            websocket_client.run
-          end
-        end
-
-        handlers = [
-          HTTP::ErrorHandler.new(verbose),
-          HTTP::LogHandler.new,
-          websocket_handler,
-          HTTP::StaticFileHandler.new(dir),
-        ]
-      else
-        handlers = [
-          HTTP::ErrorHandler.new(verbose),
-          HTTP::LogHandler.new,
-          HTTP::StaticFileHandler.new(dir),
-        ]
-      end
+    def self.run(ip_address : String, port : Int, dir = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, websocket : Bool = false, ws_host : String = "::1", ws_port : Int = 8080, ws_path : String = "/")
+      handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | HTTP::WebSocketHandler)
+      handlers << HTTP::ErrorHandler.new(verbose)
+      handlers << HTTP::LogHandler.new
+      handlers << websocket_handler(ws_host, ws_path, ws_port) if websocket
+      handlers << HTTP::StaticFileHandler.new(dir)
 
       server = HTTP::Server.new(ip_address, port, handlers)
 
@@ -53,6 +20,31 @@ module Roost
       end
 
       server.listen
+    end
+
+    def self.websocket_handler(ws_host : String, ws_path : String, ws_port : Int)
+      HTTP::WebSocketHandler.new do |context|
+        ws = HTTP::WebSocket.new(ws_host, ws_path, ws_port)
+        ws.on_message do |message|
+          context.send(message)
+        end
+
+        ws.on_close do |message|
+          context.close(message)
+        end
+
+        context.on_message do |message|
+          ws.send(message)
+        end
+
+        context.on_close do |message|
+          ws.close(message)
+        end
+
+        spawn do
+          ws.run
+        end
+      end
     end
   end
 end
