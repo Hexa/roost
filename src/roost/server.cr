@@ -3,11 +3,11 @@ require "openssl"
 
 module Roost
   class Server
-    def self.run(ip_address : String, port : Int, dir = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, websocket : Bool = false, ws_host : String = "::1", ws_port : Int = 8080, ws_path : String = "/")
+    def self.run(ip_address : String, port : Int, dir = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
       handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | HTTP::WebSocketHandler)
       handlers << HTTP::ErrorHandler.new(verbose)
       handlers << HTTP::LogHandler.new
-      handlers << websocket_handler(ws_host, ws_path, ws_port) if websocket
+      handlers << websocket_handler(ws_uri) if ws
       handlers << HTTP::StaticFileHandler.new(dir)
 
       server = HTTP::Server.new(ip_address, port, handlers)
@@ -22,9 +22,9 @@ module Roost
       server.listen
     end
 
-    def self.websocket_handler(ws_host : String, ws_path : String, ws_port : Int)
+    def self.websocket_handler(ws_uri : URI | String)
       HTTP::WebSocketHandler.new do |context|
-        ws = HTTP::WebSocket.new(ws_host, ws_path, ws_port)
+        ws = HTTP::WebSocket.new(ws_uri)
         ws.on_message do |message|
           context.send(message)
         end
