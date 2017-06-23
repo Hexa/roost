@@ -3,6 +3,37 @@ require "http/client"
 require "http/server"
 require "http/web_socket"
 
+class TestWSClient
+  def self.send_receive(host : String, path : String, port : Int, message : String) : String
+    ch = Channel(String).new
+    ws = HTTP::WebSocket.new(host, path, port, false)
+    ws.send(message)
+    ws.on_message do |message|
+      ch.send message
+    end
+
+    spawn do
+      ws.run
+    end
+
+    message = ch.receive
+    ws.close
+    message
+  end
+end
+
+class TestWSServer
+  def self.run(host : String, port : Int, handlers) : HTTP::Server
+    server = HTTP::Server.new(host, port, handlers)
+
+    spawn do
+      server.listen
+    end
+
+    server
+  end
+end
+
 describe Roost do
   it "" do
     address = "::"
@@ -44,37 +75,21 @@ describe Roost do
         context.close("close")
       end
     end
+    ws_server = TestWSServer.run(ws_host, ws_port, [ws_handler])
 
-    ws_server = HTTP::Server.new(ws_host, ws_port, [ws_handler])
-    spawn do
-      ws_server.listen
-    end
-
-    ch1 = Channel(Roost::Server).new
+    ch = Channel(Roost::Server).new
     spawn do
       server = Roost::Server.new(address, port, ".", "", "", false, true, ws_uri)
-      ch1.send(server)
+      ch.send(server)
       server.listen
     end
-    server = ch1.receive
+    server = ch.receive
 
     sleep 1
 
-    ch2 = Channel(String).new
-    ws = HTTP::WebSocket.new(ws_host, ws_path, ws_port, false)
-    ws.send("test message")
-    ws.on_message do |message|
-      ch2.send message
-    end
+    response_message = TestWSClient.send_receive(ws_host, ws_path, ws_port, "test message")
+    response_message.should eq("message")
 
-    spawn do
-      ws.run
-    end
-
-    message = ch2.receive
-    message.should eq("message")
-
-    ws.close
     ws_server.close
     server.close
   end
