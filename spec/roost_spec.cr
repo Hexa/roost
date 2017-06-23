@@ -8,9 +8,14 @@ describe Roost do
     address = "::"
     port = 8000
 
+    ch = Channel(Roost::Server).new
+
     spawn do
-      Roost::Server.run(address, port)
+      server = Roost::Server.new(address, port)
+      ch.send(server)
+      server.listen
     end
+    server = ch.receive
 
     sleep 1
 
@@ -18,13 +23,15 @@ describe Roost do
     client.get("/") do |response|
       response.status_code.should eq(200)
     end
+
+    server.close
   end
 
   it "" do
     address = "::"
-    port = 9000
-    ws_host = "127.0.0.1"
-    ws_port = 9001
+    port = 8000
+    ws_host = "::1"
+    ws_port = 8001
     ws_path = "/"
     ws_uri = "ws://#{ws_host}:#{ws_port}#{ws_path}"
 
@@ -38,32 +45,37 @@ describe Roost do
       end
     end
 
-    server = HTTP::Server.new(ws_host, ws_port, [ws_handler])
+    ws_server = HTTP::Server.new(ws_host, ws_port, [ws_handler])
     spawn do
-      server.listen
+      ws_server.listen
     end
 
+    ch1 = Channel(Roost::Server).new
     spawn do
-      Roost::Server.run(address, port, ".", "", "", false, true, ws_uri)
+      server = Roost::Server.new(address, port, ".", "", "", false, true, ws_uri)
+      ch1.send(server)
+      server.listen
     end
+    server = ch1.receive
 
     sleep 1
 
-    ch = Channel(String).new
+    ch2 = Channel(String).new
     ws = HTTP::WebSocket.new(ws_host, ws_path, ws_port, false)
     ws.send("test message")
     ws.on_message do |message|
-      ch.send message
+      ch2.send message
     end
 
     spawn do
       ws.run
     end
 
-    message = ch.receive
+    message = ch2.receive
     message.should eq("message")
 
     ws.close
+    ws_server.close
     server.close
   end
 end
