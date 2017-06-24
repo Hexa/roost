@@ -25,12 +25,23 @@ end
 class TestWSServer
   def self.run(host : String, port : Int, handlers) : HTTP::Server
     server = HTTP::Server.new(host, port, handlers)
-
     spawn do
       server.listen
     end
 
     server
+  end
+
+  def self.run(host : String, port : Int, handlers, &block)
+    server = HTTP::Server.new(host, port, handlers)
+
+    spawn do
+      server.listen
+    end
+
+    yield
+
+    server.close
   end
 end
 
@@ -75,22 +86,20 @@ describe Roost do
         context.close("close")
       end
     end
-    ws_server = TestWSServer.run(ws_host, ws_port, [ws_handler])
 
-    ch = Channel(Roost::Server).new
-    spawn do
-      server = Roost::Server.new(address, port, ".", "", "", false, true, ws_uri)
-      ch.send(server)
-      server.listen
+    TestWSServer.run(ws_host, ws_port, [ws_handler]) do
+      ch = Channel(Roost::Server).new
+      spawn do
+        server = Roost::Server.new(address, port, ".", "", "", false, true, ws_uri)
+        ch.send(server)
+        server.listen
+      end
+      server = ch.receive
+
+      sleep 1
+      response_message = TestWSClient.send_receive(ws_host, ws_path, ws_port, "test message")
+      response_message.should eq("message")
+      server.close
     end
-    server = ch.receive
-
-    sleep 1
-
-    response_message = TestWSClient.send_receive(ws_host, ws_path, ws_port, "test message")
-    response_message.should eq("message")
-
-    ws_server.close
-    server.close
   end
 end
