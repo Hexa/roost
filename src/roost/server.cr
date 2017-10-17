@@ -8,7 +8,7 @@ module Roost
       handlers << HTTP::ErrorHandler.new(verbose)
       handlers << HTTP::LogHandler.new
       handlers << Roost::Server.websocket_handler(ws_uri) if ws
-      handlers << HTTP::StaticFileHandler.new(dir)
+      handlers << Roost::StaticFileHandler.new(dir)
 
       @server = HTTP::Server.new(ip_address, port, handlers)
 
@@ -55,6 +55,15 @@ module Roost
         spawn do
           ws.run
         end
+      end
+    end
+  end
+
+  class StaticFileHandler < HTTP::StaticFileHandler
+    private def mime_type(path)
+      case File.extname(path)
+      when ".json"  then "application/json"
+      else super(path)
       end
     end
   end
