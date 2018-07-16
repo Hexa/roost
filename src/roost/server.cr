@@ -10,7 +10,10 @@ module Roost
       handlers << Roost::Server.websocket_handler(ws_uri) if ws
       handlers << Roost::StaticFileHandler.new(dir)
 
-      @server = HTTP::Server.new(ip_address, port, handlers)
+      @server = HTTP::Server.new(handlers) do |context|
+      end
+
+      @server.bind_tcp(ip_address, port)
 
       unless certificates.empty? || private_key.empty?
         context = OpenSSL::SSL::Context::Server.new
