@@ -13,13 +13,13 @@ module Roost
       @server = HTTP::Server.new(handlers) do |context|
       end
 
-      @server.bind_tcp(ip_address, port)
-
-      unless certificates.empty? || private_key.empty?
+      if certificates.empty? || private_key.empty?
+        @server.bind_tcp(ip_address, port)
+      else
         context = OpenSSL::SSL::Context::Server.new
         context.certificate_chain = certificates
         context.private_key = private_key
-        @server.tls = context
+        @server.bind_tls(ip_address, port, context)
       end
     end
 
