@@ -3,9 +3,9 @@ require "openssl"
 
 module Roost
   class Server
-    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
+    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
       handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | HTTP::WebSocketHandler)
-      handlers << HTTP::ErrorHandler.new(verbose)
+      handlers << HTTP::ErrorHandler.new
       handlers << HTTP::LogHandler.new
       handlers << Roost::Server.websocket_handler(ws_uri) if ws
       handlers << Roost::StaticFileHandler.new(dir)
@@ -31,8 +31,8 @@ module Roost
       @server.close
     end
 
-    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
-      server = self.new(ip_address, port, dir, certificates, private_key, verbose, ws, ws_uri)
+    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
+      server = self.new(ip_address, port, dir, certificates, private_key, ws, ws_uri)
       server.listen
     end
 
