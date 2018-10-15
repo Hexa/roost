@@ -7,8 +7,8 @@ port = 8000
 dir = "."
 certificates = ""
 private_key = ""
-ws = false
-ws_uri = URI.parse("ws://[::1]:8080")
+ws_uri = ""
+ws_path = "/"
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: roost [arguments]"
@@ -17,7 +17,8 @@ OptionParser.parse! do |parser|
   parser.on("-d DIR", "--document-root DIR", "document root") { |name| dir = name }
   parser.on("-c FILE", "--certificates FILE", "certificate file") { |name| certificates = name }
   parser.on("-k KEY", "--private-key KEY", "private key file") { |name| private_key = name }
-  parser.on("-w URI", "--websocket-uri URI", "websocket URI") { |name| ws_uri = name; ws = true }
+  parser.on("-w URI", "--websocket-uri URI", "websocket uri") { |name| ws_uri = name }
+  parser.on("--websocket-path PATH", "websocket path") { |name| ws_path = name }
   parser.on("-V", "--version", "version") { puts Roost::VERSION; exit 0 }
   parser.on("-h", "--help", "Show this help") do
     puts parser
@@ -27,4 +28,4 @@ OptionParser.parse! do |parser|
   parser.invalid_option { exit 255 }
 end
 
-Roost::Server.run(address, port, dir, certificates, private_key, ws, ws_uri)
+Roost::Server.run(address, port, dir, certificates, private_key, ws_uri, ws_path)

@@ -3,15 +3,15 @@ require "openssl"
 
 module Roost
   class Server
-    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
-      handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | HTTP::WebSocketHandler)
+
+    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws_uri : String = "", ws_path : String = "")
+      handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | RouteHandler)
       handlers << HTTP::ErrorHandler.new
       handlers << HTTP::LogHandler.new
-      handlers << Roost::Server.websocket_handler(ws_uri) if ws
-      handlers << Roost::StaticFileHandler.new(dir)
+      handlers << StaticFileHandler.new(dir)
+      handlers << RouteHandler.new(ws_path, Server.websocket_handler(ws_uri)) unless ws_uri.empty?
 
-      @server = HTTP::Server.new(handlers) do |context|
-      end
+      @server = HTTP::Server.new(handlers)
 
       if certificates.empty? || private_key.empty?
         @server.bind_tcp(ip_address, port)
@@ -31,12 +31,12 @@ module Roost
       @server.close
     end
 
-    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
-      server = self.new(ip_address, port, dir, certificates, private_key, ws, ws_uri)
+    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws_uri : String = "", ws_path : String = "")
+      server = self.new(ip_address, port, dir, certificates, private_key, ws_uri, ws_path)
       server.listen
     end
 
-    def self.websocket_handler(ws_uri : URI | String)
+    def self.websocket_handler(ws_uri : URI | String) : HTTP::WebSocketHandler
       HTTP::WebSocketHandler.new do |context|
         ws = HTTP::WebSocket.new(ws_uri)
         ws.on_message do |message|
@@ -67,6 +67,24 @@ module Roost
       case File.extname(path)
       when ".json"  then "application/json"
       else super(path)
+      end
+    end
+  end
+
+  class RouteHandler
+    include HTTP::Handler
+
+    def initialize(path : String, websocket_handler : HTTP::WebSocketHandler)
+      @path = path
+      @websocket_handler = websocket_handler
+    end
+
+    def call(context : HTTP::Server::Context)
+      request = context.request
+      if (request.path == @path) && request.headers.has_key?("Upgrade") && (request.headers.get("Upgrade")[0] == "websocket")
+        @websocket_handler.call(context)
+      else
+        call_next(context)
       end
     end
   end
