@@ -3,12 +3,12 @@ require "openssl"
 
 module Roost
   class Server
-
-    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws_uri : String = "", ws_path : String = "")
-      handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | RouteHandler)
+    def initialize(ip_address : String, port : Int, dir : String,
+                   certificates : String, private_key : String,
+                   ws_uri : String, ws_path : String)
+      handlers = [] of (HTTP::ErrorHandler | HTTP::StaticFileHandler | RouteHandler)
       handlers << HTTP::ErrorHandler.new
-      handlers << HTTP::LogHandler.new
-      handlers << StaticFileHandler.new(dir)
+      handlers << StaticFileHandler.new(dir || ".")
       handlers << RouteHandler.new(ws_path, Server.websocket_handler(ws_uri)) unless ws_uri.empty?
 
       @server = HTTP::Server.new(handlers)
@@ -31,7 +31,7 @@ module Roost
       @server.close
     end
 
-    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", ws_uri : String = "", ws_path : String = "")
+    def self.run(ip_address, port, dir, certificates = "", private_key = "", ws_uri = "", ws_path = "")
       server = self.new(ip_address, port, dir, certificates, private_key, ws_uri, ws_path)
       server.listen
     end
@@ -65,8 +65,8 @@ module Roost
   class StaticFileHandler < HTTP::StaticFileHandler
     private def mime_type(path)
       case File.extname(path)
-      when ".json"  then "application/json"
-      else super(path)
+      when ".json" then "application/json"
+      else              super(path)
       end
     end
   end
