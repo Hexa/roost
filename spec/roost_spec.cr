@@ -55,7 +55,7 @@ describe Roost do
     ch = Channel(Roost::Server).new
 
     spawn do
-      server = Roost::Server.new(address, port)
+      server = Roost::Server.new(address, port, ".", "", "", "", "")
       ch.send(server)
       server.listen
     end
@@ -92,7 +92,7 @@ describe Roost do
     TestWSServer.run(ws_host, ws_port, [ws_handler]) do
       ch = Channel(Roost::Server).new
       spawn do
-        server = Roost::Server.new(address, port, ".", "", "", true, ws_uri)
+        server = Roost::Server.new(address, port, ".", "", "", ws_uri, "/")
         ch.send(server)
         server.listen
       end
