@@ -1,5 +1,7 @@
 require "http/server"
 require "openssl"
+require "./route_handler"
+require "./static_file_handler"
 
 module Roost
   class Server
@@ -36,7 +38,7 @@ module Roost
       server.listen
     end
 
-    def self.websocket_handler(ws_uri : URI | String) : HTTP::WebSocketHandler
+    def self.websocket_handler(ws_uri : URI | String)
       HTTP::WebSocketHandler.new do |context|
         ws = HTTP::WebSocket.new(ws_uri)
         ws.on_message do |message|
@@ -58,33 +60,6 @@ module Roost
         spawn do
           ws.run
         end
-      end
-    end
-  end
-
-  class StaticFileHandler < HTTP::StaticFileHandler
-    private def mime_type(path)
-      case File.extname(path)
-      when ".json" then "application/json"
-      else              super(path)
-      end
-    end
-  end
-
-  class RouteHandler
-    include HTTP::Handler
-
-    def initialize(path : String, websocket_handler : HTTP::WebSocketHandler)
-      @path = path
-      @websocket_handler = websocket_handler
-    end
-
-    def call(context : HTTP::Server::Context)
-      request = context.request
-      if (request.path == @path) && request.headers.has_key?("Upgrade") && (request.headers.get("Upgrade")[0] == "websocket")
-        @websocket_handler.call(context)
-      else
-        call_next(context)
       end
     end
   end
