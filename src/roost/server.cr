@@ -1,7 +1,6 @@
 require "http/server"
 require "openssl"
 require "./route_handler"
-require "./static_file_handler"
 
 module Roost
   class Server
@@ -10,7 +9,7 @@ module Roost
                    ws_uri : String, ws_path : String)
       handlers = [] of (HTTP::ErrorHandler | HTTP::StaticFileHandler | RouteHandler)
       handlers << HTTP::ErrorHandler.new
-      handlers << StaticFileHandler.new(dir || ".")
+      handlers << HTTP::StaticFileHandler.new(dir || ".")
       handlers << RouteHandler.new(ws_path, Server.websocket_handler(ws_uri)) unless ws_uri.empty?
 
       @server = HTTP::Server.new(handlers)
