@@ -1,16 +1,40 @@
 require "http/server"
 require "openssl"
-require "./route_handler"
 
 module Roost
   class Server
     def initialize(ip_address : String, port : Int, dir : String,
                    certificates : String, private_key : String,
                    ws_uri : String, ws_path : String)
-      handlers = [] of (HTTP::ErrorHandler | HTTP::StaticFileHandler | RouteHandler)
-      handlers << HTTP::ErrorHandler.new
-      handlers << HTTP::StaticFileHandler.new(dir || ".")
-      handlers << RouteHandler.new(ws_path, Server.websocket_handler(ws_uri)) unless ws_uri.empty?
+      handlers = [
+        HTTP::ErrorHandler.new,
+        HTTP::StaticFileHandler.new(dir || "."),
+        HTTP::WebSocketHandler.new do |websocket, context|
+          request = context.request
+          if request.path == ws_path
+            ws = HTTP::WebSocket.new(ws_uri)
+            ws.on_message do |message|
+              websocket.send(message)
+            end
+
+            ws.on_close do |message|
+              websocket.close(message)
+            end
+
+            websocket.on_message do |message|
+              ws.send(message)
+            end
+
+            websocket.on_close do |message|
+              ws.close(message)
+            end
+
+            spawn do
+              ws.run
+            end
+          end
+        end,
+      ]
 
       @server = HTTP::Server.new(handlers)
 
@@ -35,31 +59,6 @@ module Roost
     def self.run(ip_address, port, dir, certificates = "", private_key = "", ws_uri = "", ws_path = "")
       server = self.new(ip_address, port, dir, certificates, private_key, ws_uri, ws_path)
       server.listen
-    end
-
-    def self.websocket_handler(ws_uri : URI | String)
-      HTTP::WebSocketHandler.new do |context|
-        ws = HTTP::WebSocket.new(ws_uri)
-        ws.on_message do |message|
-          context.send(message)
-        end
-
-        ws.on_close do |message|
-          context.close(message)
-        end
-
-        context.on_message do |message|
-          ws.send(message)
-        end
-
-        context.on_close do |message|
-          ws.close(message)
-        end
-
-        spawn do
-          ws.run
-        end
-      end
     end
   end
 end
