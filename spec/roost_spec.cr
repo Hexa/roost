@@ -79,13 +79,13 @@ describe Roost do
     ws_path = "/"
     ws_uri = "ws://#{ws_host}:#{ws_port}#{ws_path}"
 
-    ws_handler = HTTP::WebSocketHandler.new do |context|
-      context.on_message do |message|
-        context.send("message")
+    ws_handler = HTTP::WebSocketHandler.new do |ws, context|
+      ws.on_message do |message|
+        ws.send("message")
       end
 
-      context.on_close do |message|
-        context.close("close")
+      ws.on_close do |message|
+        ws.close("close")
       end
     end
 
