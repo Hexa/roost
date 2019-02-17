@@ -3,12 +3,12 @@ require "openssl"
 
 module Roost
   class Server
-    def initialize(ip_address : String, port : Int, dir : String,
+    def initialize(ip_address : String, port : Int, public_dir : String,
                    certificates : String, private_key : String,
                    ws_uri : String, ws_path : String)
       handlers = [
         HTTP::ErrorHandler.new,
-        HTTP::StaticFileHandler.new(dir || "."),
+        HTTP::StaticFileHandler.new(public_dir),
         HTTP::WebSocketHandler.new do |websocket, context|
           request = context.request
           if request.path == ws_path
@@ -56,8 +56,8 @@ module Roost
       @server.close
     end
 
-    def self.run(ip_address, port, dir, certificates = "", private_key = "", ws_uri = "", ws_path = "")
-      server = self.new(ip_address, port, dir, certificates, private_key, ws_uri, ws_path)
+    def self.run(ip_address, port, public_dir, certificates = "", private_key = "", ws_uri = "", ws_path = "")
+      server = self.new(ip_address, port, public_dir, certificates, private_key, ws_uri, ws_path)
       server.listen
     end
   end
