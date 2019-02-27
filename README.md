@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-$ crystal build src/roost.cr --release
+$ make
 ```
 
 ## Usage
