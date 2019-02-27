@@ -2,7 +2,7 @@ require "./roost/*"
 require "option_parser"
 require "uri"
 
-address = "::"
+ip_address = "::"
 port = 8000
 public_dir = "."
 certificates = ""
@@ -12,7 +12,7 @@ ws_path = "/"
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: roost [arguments]"
-  parser.on("-l ADDRESS", "--listening-address ADDRESS", "listening address") { |name| address = name }
+  parser.on("-l ADDRESS", "--listening-address ADDRESS", "listening address") { |name| ip_address = name }
   parser.on("-p PORT", "--listening-port PORT", "listening port") { |name| port = name.to_i }
   parser.on("-d DIR", "--document-root DIR", "document root") { |name| public_dir = name }
   parser.on("-c FILE", "--certificates FILE", "certificate file") { |name| certificates = name }
@@ -28,4 +28,5 @@ OptionParser.parse! do |parser|
   parser.invalid_option { exit 255 }
 end
 
-Roost::Server.run(address, port, public_dir, certificates, private_key, ws_uri, ws_path)
+server = Roost::Server.new(ip_address, port, public_dir, certificates, private_key, ws_uri, ws_path)
+server.listen

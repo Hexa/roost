@@ -3,9 +3,12 @@ require "openssl"
 
 module Roost
   class Server
-    def initialize(ip_address : String, port : Int, public_dir : String,
-                   certificates : String, private_key : String,
-                   ws_uri : String, ws_path : String)
+    @server : HTTP::Server
+
+    def initialize(ip_address : String = "::", port : Int = 8080,
+                   public_dir : String = ".", ws_uri : String = "",
+                   ws_path : String = "/", certificates : String = "",
+                   private_key : String = "")
       handlers = [
         HTTP::ErrorHandler.new,
         HTTP::StaticFileHandler.new(public_dir),
@@ -54,11 +57,6 @@ module Roost
 
     def close
       @server.close
-    end
-
-    def self.run(ip_address, port, public_dir, certificates = "", private_key = "", ws_uri = "", ws_path = "")
-      server = self.new(ip_address, port, public_dir, certificates, private_key, ws_uri, ws_path)
-      server.listen
     end
   end
 end
