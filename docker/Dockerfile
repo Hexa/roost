@@ -1,4 +1,4 @@
-FROM hexa/crystal:ubuntu-14.04
+FROM crystallang/crystal:latest
 MAINTAINER Hexa <hexa.diary@gmail.com>
 
 ARG branch=develop
