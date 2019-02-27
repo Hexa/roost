@@ -1,10 +1,14 @@
-.PHONY: all ubuntu
+.PHONY: all run ubuntu
 
 BRANCH = develop
 TAG := $(BRANCH)
 TARGET = $@
 
-all: ubuntu
+all:
+	crystal build src/roost.cr --release
+
+run:
+	crystal run src/roost.cr
 
 ubuntu:
 	docker image build -t roost:$(TARGET) --build-arg branch=$(TAG) --no-cache - < docker/Dockerfile
