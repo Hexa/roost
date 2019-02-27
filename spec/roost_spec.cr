@@ -3,59 +3,15 @@ require "http/client"
 require "http/server"
 require "http/web_socket"
 
-class TestWSClient
-  def self.send_receive(host : String, path : String, port : Int, message : String) : String
-    ch = Channel(String).new
-    ws = HTTP::WebSocket.new(host, path, port, false)
-    ws.send(message)
-    ws.on_message do |message|
-      ch.send message
-    end
-
-    spawn do
-      ws.run
-    end
-
-    message = ch.receive
-    ws.close
-    message
-  end
-end
-
-class TestWSServer
-  def self.run(host : String, port : Int, handlers) : HTTP::Server
-    server = HTTP::Server.new(handlers)
-    server.bind_tcp(host, port)
-    spawn do
-      server.listen
-    end
-
-    server
-  end
-
-  def self.run(host : String, port : Int, handlers, &block)
-    server = HTTP::Server.new(handlers)
-    server.bind_tcp(host, port)
-
-    spawn do
-      server.listen
-    end
-
-    yield
-
-    server.close
-  end
-end
-
 describe Roost do
   it "" do
-    address = "::"
+    ip_address = "::"
     port = 8000
 
     ch = Channel(Roost::Server).new
 
     spawn do
-      server = Roost::Server.new(address, port, ".", "", "", "", "")
+      server = Roost::Server.new(ip_address: ip_address, port: port)
       ch.send(server)
       server.listen
     end
@@ -72,7 +28,7 @@ describe Roost do
   end
 
   it "" do
-    address = "::"
+    ip_address = "::"
     port = 8000
     ws_host = "::1"
     ws_port = 8001
@@ -92,7 +48,7 @@ describe Roost do
     TestWSServer.run(ws_host, ws_port, [ws_handler]) do
       ch = Channel(Roost::Server).new
       spawn do
-        server = Roost::Server.new(address, port, ".", "", "", ws_uri, "/")
+        server = Roost::Server.new(ip_address: ip_address, port: port, public_dir: ".", ws_uri: ws_uri)
         ch.send(server)
         server.listen
       end
