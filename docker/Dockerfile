@@ -1,4 +1,6 @@
-FROM hexa/crystal:ubuntu-18.04
+ARG target=ubuntu-18.04
+
+FROM hexa/crystal:$target
 MAINTAINER Hexa <hexa.diary@gmail.com>
 
 ARG branch=develop
