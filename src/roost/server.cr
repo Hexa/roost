@@ -3,20 +3,51 @@ require "openssl"
 
 module Roost
   class Server
-    def initialize(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
-      handlers = [] of (HTTP::ErrorHandler | HTTP::LogHandler | HTTP::StaticFileHandler | HTTP::WebSocketHandler)
-      handlers << HTTP::ErrorHandler.new(verbose)
-      handlers << HTTP::LogHandler.new
-      handlers << Roost::Server.websocket_handler(ws_uri) if ws
-      handlers << HTTP::StaticFileHandler.new(dir)
+    @server : HTTP::Server
 
-      @server = HTTP::Server.new(ip_address, port, handlers)
+    def initialize(ip_address : String = "::", port : Int = 8080,
+                   public_dir : String = ".", ws_uri : String = "",
+                   ws_path : String = "/", certificates : String = "",
+                   private_key : String = "")
+      handlers = [
+        HTTP::ErrorHandler.new,
+        HTTP::StaticFileHandler.new(public_dir),
+        HTTP::WebSocketHandler.new do |websocket, context|
+          request = context.request
+          if request.path == ws_path
+            ws = HTTP::WebSocket.new(ws_uri)
+            ws.on_message do |message|
+              websocket.send(message)
+            end
 
-      unless certificates.empty? || private_key.empty?
+            ws.on_close do |message|
+              websocket.close(message)
+            end
+
+            websocket.on_message do |message|
+              ws.send(message)
+            end
+
+            websocket.on_close do |message|
+              ws.close(message)
+            end
+
+            spawn do
+              ws.run
+            end
+          end
+        end,
+      ]
+
+      @server = HTTP::Server.new(handlers)
+
+      if certificates.empty? || private_key.empty?
+        @server.bind_tcp(ip_address, port)
+      else
         context = OpenSSL::SSL::Context::Server.new
         context.certificate_chain = certificates
         context.private_key = private_key
-        @server.tls = context
+        @server.bind_tls(ip_address, port, context)
       end
     end
 
@@ -26,36 +57,6 @@ module Roost
 
     def close
       @server.close
-    end
-
-    def self.run(ip_address : String, port : Int, dir : String = ".", certificates : String = "", private_key : String = "", verbose : Bool = false, ws : Bool = false, ws_uri : URI | String = "ws://[::1]:8080/")
-      server = self.new(ip_address, port, dir, certificates, private_key, verbose, ws, ws_uri)
-      server.listen
-    end
-
-    def self.websocket_handler(ws_uri : URI | String)
-      HTTP::WebSocketHandler.new do |context|
-        ws = HTTP::WebSocket.new(ws_uri)
-        ws.on_message do |message|
-          context.send(message)
-        end
-
-        ws.on_close do |message|
-          context.close(message)
-        end
-
-        context.on_message do |message|
-          ws.send(message)
-        end
-
-        context.on_close do |message|
-          ws.close(message)
-        end
-
-        spawn do
-          ws.run
-        end
-      end
     end
   end
 end
