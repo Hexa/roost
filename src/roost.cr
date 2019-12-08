@@ -10,7 +10,7 @@ private_key = ""
 ws_uri = ""
 ws_path = "/"
 
-OptionParser.parse! do |parser|
+OptionParser.parse do |parser|
   parser.banner = "Usage: roost [arguments]"
   parser.on("-l ADDRESS", "--listening-address ADDRESS", "listening address") { |name| ip_address = name }
   parser.on("-p PORT", "--listening-port PORT", "listening port") { |name| port = name.to_i }
