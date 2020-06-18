@@ -8,6 +8,6 @@ targets:
   roost:
     main: src/roost.cr
 
-crystal: 0.28.0
+crystal: 0.35.0
 
 license: MIT

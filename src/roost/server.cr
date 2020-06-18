@@ -20,16 +20,16 @@ module Roost
               websocket.send(message)
             end
 
-            ws.on_close do |message|
-              websocket.close(message)
+            ws.on_close do |code, message|
+              websocket.close(code, message)
             end
 
             websocket.on_message do |message|
               ws.send(message)
             end
 
-            websocket.on_close do |message|
-              ws.close(message)
+            websocket.on_close do |code, message|
+              ws.close(code, message)
             end
 
             spawn do

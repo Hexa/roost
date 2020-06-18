@@ -41,7 +41,7 @@ describe Roost do
       end
 
       ws.on_close do |message|
-        ws.close("close")
+        ws.close(HTTP::WebSocket::CloseCode::NormalClosure, "close")
       end
     end
 
