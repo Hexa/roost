@@ -1,4 +1,4 @@
-ARG target=ubuntu-18.04
+ARG target=ubuntu-20.04
 
 FROM hexa/crystal:$target AS builder
 MAINTAINER Hexa <hexa.diary@gmail.com>
