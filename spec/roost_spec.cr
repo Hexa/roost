@@ -7,7 +7,7 @@ require "uri"
 describe Roost do
   it "" do
     ip_address = "localhost"
-    port = 8000
+    port = 0
 
     ch = Channel(Roost::Server).new
 
@@ -20,7 +20,7 @@ describe Roost do
 
     sleep 1
 
-    client = HTTP::Client.new("localhost", port)
+    client = HTTP::Client.new("localhost", server.ip_address.port)
     client.get("/") do |response|
       response.status_code.should eq(200)
     end
@@ -30,8 +30,8 @@ describe Roost do
 
   it "" do
     ip_address = "localhost"
-    port = 8000
-    ws_uri = URI.new(scheme = "ws", host = "localhost", port = 8001, path = "/")
+    port = 0
+    ws_uri = URI.new("ws", "localhost", 18080, "/")
 
     ws_handler = HTTP::WebSocketHandler.new do |ws, context|
       ws.on_message do |message|
@@ -43,7 +43,7 @@ describe Roost do
       end
     end
 
-    TestWSServer.run(ws_uri.host || "localhost", ws_uri.port || 8001, [ws_handler]) do
+    TestWSServer.run(ws_uri.host || "localhost", ws_uri.port || 18080, [ws_handler]) do
       ch = Channel(Roost::Server).new
       spawn do
         server = Roost::Server.new(ip_address: ip_address, port: port, public_dir: ".", ws_uri: ws_uri.to_s)
@@ -51,8 +51,10 @@ describe Roost do
         server.listen
       end
       server = ch.receive
+      ws_uri = URI.new(scheme = "ws", host = "localhost", port = server.ip_address.port, path = "/")
 
       sleep 1
+
       response_message = TestWSClient.send_receive(ws_uri, "test message")
       response_message.should eq("message")
       server.close
