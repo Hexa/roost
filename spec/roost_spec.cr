@@ -51,7 +51,7 @@ describe Roost do
         server.listen
       end
       server = ch.receive
-      ws_uri = URI.new(scheme = "ws", host = "localhost", port = server.ip_address.port, path = "/")
+      ws_uri = URI.new("ws", "localhost", server.ip_address.port, "/")
 
       sleep 1
 
