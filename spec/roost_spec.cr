@@ -18,7 +18,10 @@ describe Roost do
     end
     server = ch.receive
 
-    sleep 1
+    5.times do
+      break if server.listening?
+      sleep 1
+    end
 
     client = HTTP::Client.new("localhost", server.ip_address.port)
     client.get("/") do |response|
@@ -53,7 +56,10 @@ describe Roost do
       server = ch.receive
       ws_uri = URI.new("ws", "localhost", server.ip_address.port, "/")
 
-      sleep 1
+      5.times do
+        break if server.listening?
+        sleep 1
+      end
 
       response_message = TestWSClient.send_receive(ws_uri, "test message")
       response_message.should eq("message")
