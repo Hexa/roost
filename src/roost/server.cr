@@ -56,6 +56,10 @@ module Roost
       @server.listen
     end
 
+    def listening?
+      @server.listening?
+    end
+
     def close
       @server.close
     end
