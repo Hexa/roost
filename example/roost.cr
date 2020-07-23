@@ -28,5 +28,5 @@ OptionParser.parse do |parser|
   parser.invalid_option { exit 255 }
 end
 
-server = Roost::Server.new(ip_address, port, public_dir, certificates, private_key, ws_uri, ws_path)
+server = Roost::Server.new(ip_address, port, public_dir, ws_uri, ws_path, certificates, private_key)
 server.listen
