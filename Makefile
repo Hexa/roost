@@ -1,10 +1,13 @@
-.PHONY: all run spec clean
+.PHONY: all release run spec clean
 
 BRANCH ?= develop
 TAG := $(BRANCH)
 TARGET = $@
 
 all:
+	crystal build example/roost.cr
+
+release:
 	crystal build example/roost.cr --release
 
 run:
