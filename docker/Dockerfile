@@ -9,7 +9,7 @@ RUN git clone -b $branch https://github.com/Hexa/roost.git
 
 WORKDIR /roost
 
-RUN make release
+RUN make release && strip roost
 
 FROM scratch
 
