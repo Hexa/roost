@@ -1,5 +1,5 @@
 name: roost
-version: 0.4.1
+version: 0.5.0
 
 authors:
   - Hexa <hexa.diary@gmail.com>
@@ -8,6 +8,6 @@ targets:
   roost:
     main: src/roost.cr
 
-crystal: 0.35.1
+crystal: 1.0.0
 
 license: MIT
