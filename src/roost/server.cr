@@ -4,6 +4,7 @@ require "openssl"
 module Roost
   class Server
     @server : HTTP::Server
+    @ip_address : Socket::IPAddress
 
     def initialize(ip_address : String = "::", port : Int = 8080,
                    public_dir : String = ".", ws_uri : String = "",
@@ -11,7 +12,6 @@ module Roost
                    private_key : String = "")
       handlers = [
         HTTP::ErrorHandler.new,
-        HTTP::StaticFileHandler.new(public_dir),
         HTTP::WebSocketHandler.new do |websocket, context|
           request = context.request
           if request.path == ws_path
@@ -20,16 +20,16 @@ module Roost
               websocket.send(message)
             end
 
-            ws.on_close do |message|
-              websocket.close(message)
+            ws.on_close do |code, message|
+              websocket.close(code, message)
             end
 
             websocket.on_message do |message|
               ws.send(message)
             end
 
-            websocket.on_close do |message|
-              ws.close(message)
+            websocket.on_close do |code, message|
+              ws.close(code, message)
             end
 
             spawn do
@@ -37,17 +37,18 @@ module Roost
             end
           end
         end,
+        HTTP::StaticFileHandler.new(public_dir),
       ]
 
       @server = HTTP::Server.new(handlers)
 
       if certificates.empty? || private_key.empty?
-        @server.bind_tcp(ip_address, port)
+        @ip_address = @server.bind_tcp(ip_address, port)
       else
         context = OpenSSL::SSL::Context::Server.new
         context.certificate_chain = certificates
         context.private_key = private_key
-        @server.bind_tls(ip_address, port, context)
+        @ip_address = @server.bind_tls(ip_address, port, context)
       end
     end
 
@@ -55,8 +56,16 @@ module Roost
       @server.listen
     end
 
+    def listening?
+      @server.listening?
+    end
+
     def close
       @server.close
+    end
+
+    def ip_address
+      @ip_address
     end
   end
 end

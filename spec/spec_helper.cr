@@ -2,9 +2,9 @@ require "spec"
 require "../src/roost/server"
 
 class TestWSClient
-  def self.send_receive(host : String, path : String, port : Int, message : String) : String
+  def self.send_receive(uri : URI, message : String) : String
     ch = Channel(String).new
-    ws = HTTP::WebSocket.new(host, path, port, false)
+    ws = HTTP::WebSocket.new(uri)
     ws.send(message)
     ws.on_message do |message|
       ch.send message
@@ -21,7 +21,7 @@ class TestWSClient
 end
 
 class TestWSServer
-  def self.run(host : String, port : Int, handlers) : HTTP::Server
+  def self.run(host : String, port : Int32, handlers) : HTTP::Server
     server = HTTP::Server.new(handlers)
     server.bind_tcp(host, port)
     spawn do
@@ -31,7 +31,7 @@ class TestWSServer
     server
   end
 
-  def self.run(host : String, port : Int, handlers, &block)
+  def self.run(host : String, port : Int32, handlers, &block)
     server = HTTP::Server.new(handlers)
     server.bind_tcp(host, port)
 

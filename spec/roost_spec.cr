@@ -2,11 +2,12 @@ require "./spec_helper"
 require "http/client"
 require "http/server"
 require "http/web_socket"
+require "uri"
 
 describe Roost do
   it "" do
-    ip_address = "::"
-    port = 8000
+    ip_address = "localhost"
+    port = 0
 
     ch = Channel(Roost::Server).new
 
@@ -17,9 +18,12 @@ describe Roost do
     end
     server = ch.receive
 
-    sleep 1
+    5.times do
+      break if server.listening?
+      sleep 1
+    end
 
-    client = HTTP::Client.new("::1", port)
+    client = HTTP::Client.new("localhost", server.ip_address.port)
     client.get("/") do |response|
       response.status_code.should eq(200)
     end
@@ -28,12 +32,9 @@ describe Roost do
   end
 
   it "" do
-    ip_address = "::"
-    port = 8000
-    ws_host = "::1"
-    ws_port = 8001
-    ws_path = "/"
-    ws_uri = "ws://#{ws_host}:#{ws_port}#{ws_path}"
+    ip_address = "localhost"
+    port = 0
+    ws_uri = URI.new("ws", "localhost", 18080, "/")
 
     ws_handler = HTTP::WebSocketHandler.new do |ws, context|
       ws.on_message do |message|
@@ -41,21 +42,26 @@ describe Roost do
       end
 
       ws.on_close do |message|
-        ws.close("close")
+        ws.close(HTTP::WebSocket::CloseCode::NormalClosure, "close")
       end
     end
 
-    TestWSServer.run(ws_host, ws_port, [ws_handler]) do
+    TestWSServer.run(ws_uri.host || "localhost", ws_uri.port || 18080, [ws_handler]) do
       ch = Channel(Roost::Server).new
       spawn do
-        server = Roost::Server.new(ip_address: ip_address, port: port, public_dir: ".", ws_uri: ws_uri)
+        server = Roost::Server.new(ip_address: ip_address, port: port, public_dir: ".", ws_uri: ws_uri.to_s)
         ch.send(server)
         server.listen
       end
       server = ch.receive
+      ws_uri = URI.new("ws", "localhost", server.ip_address.port, "/")
 
-      sleep 1
-      response_message = TestWSClient.send_receive(ws_host, ws_path, ws_port, "test message")
+      5.times do
+        break if server.listening?
+        sleep 1
+      end
+
+      response_message = TestWSClient.send_receive(ws_uri, "test message")
       response_message.should eq("message")
       server.close
     end
